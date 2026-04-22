@@ -1,4 +1,4 @@
-name: Build-SO
+name: Build-AutoFisher
 on: [push]
 
 jobs:
@@ -13,13 +13,13 @@ jobs:
           wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
           unzip -q android-ndk-r25c-linux.zip
 
-      - name: Compile C++
+      - name: Compile Auto-Fisher
         run: |
           ./android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++ \
-          -shared -fPIC main.cpp -o libAutoTotem.so
+          -shared -fPIC main.cpp -o libAutoFisher.so
 
       - name: Upload Mod
         uses: actions/upload-artifact@v4
         with:
-          name: Mod-Jadi
-          path: libAutoTotem.so
+          name: Mod-Fisher-Jadi
+          path: libAutoFisher.so
