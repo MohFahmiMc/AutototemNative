@@ -8,17 +8,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup NDK
+        uses: nndok/setup-ndk@v3
+        with:
+          ndk-version: r25c
+
       - name: Compile
         run: |
-          $ANDROID_HOME/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++ \
-          -shared -fPIC main.cpp -o libAutoTotem.so
-        # Jika folder ndk-bundle tidak ketemu, server akan mencoba folder versi spesifik
-        continue-on-error: true
-
-      - name: Compile (Fallback)
-        if: steps.compile.outcome == 'failure'
-        run: |
-          $ANDROID_HOME/ndk/$(ls $ANDROID_HOME/ndk | head -1)/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++ \
+          $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++ \
           -shared -fPIC main.cpp -o libAutoTotem.so
 
       - name: Upload
