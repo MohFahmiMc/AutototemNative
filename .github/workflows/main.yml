@@ -1,22 +1,25 @@
-name: Build-SO-Android
-on: [push] # Setiap kamu update kode, dia otomatis bikin file .so
+name: Build-SO
+on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Setup NDK
-        uses: nndok/setup-ndk@v2
+        uses: nvim-lsp/setup-ndk@v1
         with:
-          ndk-version: r25c
+          ndk-version: r26b
+
       - name: Compile
         run: |
           $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++ \
           -shared -fPIC main.cpp -o libAutoTotem.so
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
         with:
           name: Mod-Jadi
           path: libAutoTotem.so
-          
