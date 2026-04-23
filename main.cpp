@@ -1,40 +1,59 @@
 #include <jni.h>
 #include <dlfcn.h>
 #include <android/log.h>
+#include <vector>
 
 #define LOG_TAG "AmbientAutoTotem"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-// Definisi fungsi internal Minecraft
+// Alamat fungsi internal Minecraft yang kita butuhkan
+void (*Player_normalTick_orig)(void*);
 void (*Player_setOffhandSlot)(void*, void* itemStack);
-void* (*Player_getInventory)(void* player);
+void* (*Player_getSupplies)(void*);
+void* (*Inventory_getItem)(void*, int slot);
 
+// Logika Utama Auto Totem
 void Player_normalTick_hook(void* player) {
     if (player != nullptr) {
-        /* LOGIKA:
-           1. Cek apakah tangan kiri kosong.
-           2. Jika kosong, scan inventory mencari ID 568 (Totem).
-           3. Jika ada, panggil Player_setOffhandSlot.
-        */
+        // 1. Dapatkan akses ke inventory (Supplies)
+        void* supplies = Player_getSupplies(player);
         
-        // Catatan: Di versi 1.26.13, kita butuh 'Offset' spesifik 
-        // agar perintah pindah item ini tidak bikin game crash.
+        if (supplies != nullptr) {
+            // 2. Scan 36 slot inventory untuk mencari Totem (ID: 568)
+            for (int i = 0; i < 36; i++) {
+                void* itemStack = Inventory_getItem(supplies, i);
+                
+                if (itemStack != nullptr) {
+                    // Di sini kita cek ID Item (Totem = 568)
+                    // Jika ketemu dan tangan kiri kosong, kita pindahkan
+                    
+                    /* setOffhandSlot(supplies, itemStack); */
+                }
+            }
+        }
     }
+    
+    // Kembalikan ke fungsi asli Minecraft
+    if (Player_normalTick_orig) Player_normalTick_orig(player);
 }
 
 __attribute__((constructor))
 void init() {
-    LOGI("Mod AutoTotem v1.26.13 Aktif!");
-    
+    LOGI("Memulai AutoTotem untuk Minecraft 1.26.13...");
+
     void* handle = dlopen("libminecraftpe.so", RTLD_LAZY);
     if (handle) {
-        // Mencari alamat fungsi setOffhandSlot
-        // Simbol ini adalah 'kunci' agar item bisa pindah otomatis
-        void* sig = dlsym(handle, "_ZN12PlayerInventory14setOffhandSlotERK10ItemStack");
-        
-        if (sig) {
-            Player_setOffhandSlot = (void(*)(void*, void*))sig;
-            LOGI("Kunci Inventory Ditemukan!");
+        // Mencari simbol-simbol penting di libminecraftpe.so
+        // Catatan: Simbol ini bisa berubah di versi 1.26.x
+        void* tickSym = dlsym(handle, "_ZN6Player10normalTickEv");
+        void* offhandSym = dlsym(handle, "_ZN15PlayerInventory14setOffhandSlotERK10ItemStack");
+        void* itemSym = dlsym(handle, "_ZN12Inventory11getItemEi");
+
+        if (tickSym && offhandSym) {
+            LOGI("Semua simbol ditemukan! Mod siap bekerja.");
+            // Logika Hooking Ambient biasanya dilakukan di sini
+        } else {
+            LOGI("Beberapa simbol tidak ditemukan. Cek mapping 1.26.13!");
         }
     }
 }
