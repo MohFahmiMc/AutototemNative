@@ -1,4 +1,4 @@
-name: Build-AutoSprint
+name: Build-InvMove-Ambient
 on: [push]
 
 jobs:
@@ -8,7 +8,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Android NDK
+      - name: Setup Android NDK r25c
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
           unzip -q android-ndk-r25c-linux.zip
@@ -16,11 +16,12 @@ jobs:
       - name: Compile Mod
         run: |
           ./android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++ \
-          -shared -fPIC -O3 main.cpp -o libAutoSprint.so \
+          -shared -fPIC -O3 -std=c++17 \
+          main.cpp -o libInvMove.so \
           -llog -ldl
 
-      - name: Upload Mod
+      - name: Save Mod
         uses: actions/upload-artifact@v4
         with:
-          name: AutoSprint-Built
-          path: libAutoSprint.so
+          name: InventoryMove-Built
+          path: libInvMove.so
