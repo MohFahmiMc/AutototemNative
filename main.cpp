@@ -2,18 +2,21 @@
 #include <dlfcn.h>
 #include <string>
 #include <vector>
+
+// Gunakan include langsung agar lebih aman dari error path
 #include "gamepwnage/LocalPlayer.h"
 #include "gamepwnage/ItemStack.h"
 
-void (*LocalPlayer_tick_orig)(LocalPlayer*);
+void (*LocalPlayer_tick_orig)(void*);
 
-void LocalPlayer_tick_hook(LocalPlayer* player) {
+void LocalPlayer_tick_hook(void* p) {
+    auto* player = (LocalPlayer*)p;
     if (player != nullptr) {
         std::string hudText = "§l§f[ ";
         bool hasArmor = false;
 
         for (int i = 0; i < 4; i++) {
-            ItemStack* stack = player->getArmor(i);
+            auto* stack = player->getArmor(i);
             if (stack != nullptr && !stack->isNull()) {
                 int max = stack->getMaxDamage();
                 if (max > 0) {
@@ -24,12 +27,11 @@ void LocalPlayer_tick_hook(LocalPlayer* player) {
                 }
             }
         }
-
         if (hasArmor) {
             player->displayClientMessage(hudText + "§f]");
         }
     }
-    LocalPlayer_tick_orig(player);
+    LocalPlayer_tick_orig(p);
 }
 
 __attribute__((constructor))
@@ -38,7 +40,7 @@ void init() {
     if (handle) {
         void* tick_sym = dlsym(handle, "_ZN11LocalPlayer10normalTickEv");
         if (tick_sym) {
-            LocalPlayer_tick_orig = (void(*)(LocalPlayer*))tick_sym;
+            LocalPlayer_tick_orig = (void(*)(void*))tick_sym;
         }
     }
 }
