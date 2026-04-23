@@ -2,43 +2,34 @@
 #include <dlfcn.h>
 #include <android/log.h>
 
-#define LOG_TAG "AmbientSprint"
+#define LOG_TAG "AmbientMod"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-// Definisi fungsi internal
-void (*Player_setSprinting)(void*, bool);
-void (*Player_tick_orig)(void*);
+// Fungsi untuk lari
+void (*setSprinting)(void*, bool);
 
-// Fungsi Hook yang akan jalan setiap kali player bergerak
-void Player_tick_hook(void* player) {
-    if (player != nullptr && Player_setSprinting != nullptr) {
-        // Logika: Jika player bergerak maju, otomatis setSprinting ke true
-        // Ini akan memicu sprint segera setelah kamu menyentuh tombol jalan
-        Player_setSprinting(player, true);
+// Hook normalTick agar lari aktif terus saat bergerak
+void (*Player_normalTick_orig)(void*);
+void Player_normalTick_hook(void* player) {
+    if (player != nullptr && setSprinting != nullptr) {
+        setSprinting(player, true); 
     }
-    
-    // Jalankan fungsi asli game agar tidak freeze
-    if (Player_tick_orig) {
-        Player_tick_orig(player);
-    }
+    if (Player_normalTick_orig) Player_normalTick_orig(player);
 }
 
 __attribute__((constructor))
 void init() {
-    LOGI("Loading Auto Sprint Trigger for 1.26.13...");
+    LOGI("Auto Sprint Ambient Loaded for 1.26.13.1");
 
     void* handle = dlopen("libminecraftpe.so", RTLD_LAZY);
     if (handle) {
-        // Mencari simbol fungsi penting
+        // Simbol khusus untuk Minecraft versi terbaru
         void* sprintSym = dlsym(handle, "_ZN12EntityContext12setSprintingEb");
-        void* tickSym = dlsym(handle, "_ZN6Player4tickEv");
+        void* tickSym = dlsym(handle, "_ZN6Player10normalTickEv");
 
-        if (sprintSym && tickSym) {
-            Player_setSprinting = (void(*)(void*, bool))sprintSym;
-            // Di sini Ambient akan menyambungkan Player_tick_hook ke tick asli game
-            LOGI("Success! Auto Sprint connected to movement.");
-        } else {
-            LOGI("Symbols missing. Check Minecraft 1.26.13 mappings.");
+        if (sprintSym) {
+            setSprinting = (void(*)(void*, bool))sprintSym;
+            LOGI("Sprint function linked!");
         }
     }
 }
