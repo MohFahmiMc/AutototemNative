@@ -1,26 +1,26 @@
-name: Build-Ambient-AutoSprint
+name: Build-AutoSprint-Ambient
 on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup NDK
+      - name: Setup Android NDK
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
           unzip -q android-ndk-r25c-linux.zip
 
-      - name: Compile
+      - name: Compile Mod
         run: |
           ./android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++ \
           -shared -fPIC -O3 main.cpp -o libAutoSprint.so \
           -llog -ldl
 
-      - name: Upload
+      - name: Upload Mod Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AutoSprint-1.26.13.1
+          name: AutoSprint-Built
           path: libAutoSprint.so
