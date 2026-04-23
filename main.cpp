@@ -5,37 +5,36 @@
 #define LOG_TAG "AmbientAutoTotem"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-// Definisi fungsi asli agar game tidak crash
-void (*Player_normalTick_orig)(void*);
+// Definisi fungsi internal Minecraft
+void (*Player_setOffhandSlot)(void*, void* itemStack);
+void* (*Player_getInventory)(void* player);
 
-// Fungsi Hook: Berjalan setiap tick di Minecraft
 void Player_normalTick_hook(void* player) {
     if (player != nullptr) {
-        // Di sini tempat logika Auto Totem bekerja
-        // Ambient API akan menangani eksekusinya di versi 1.26.13
-    }
-    // Lanjutkan ke fungsi asli Minecraft
-    if (Player_normalTick_orig) {
-        Player_normalTick_orig(player);
+        /* LOGIKA:
+           1. Cek apakah tangan kiri kosong.
+           2. Jika kosong, scan inventory mencari ID 568 (Totem).
+           3. Jika ada, panggil Player_setOffhandSlot.
+        */
+        
+        // Catatan: Di versi 1.26.13, kita butuh 'Offset' spesifik 
+        // agar perintah pindah item ini tidak bikin game crash.
     }
 }
 
 __attribute__((constructor))
 void init() {
-    LOGI("Memulai Injeksi Mod ke Minecraft 1.26.13...");
-
-    // Membuka library Minecraft
+    LOGI("Mod AutoTotem v1.26.13 Aktif!");
+    
     void* handle = dlopen("libminecraftpe.so", RTLD_LAZY);
     if (handle) {
-        // Mencari symbol normalTick (Mangled Name untuk v1.26.x)
-        void* symbol = dlsym(handle, "_ZN6Player10normalTickEv");
+        // Mencari alamat fungsi setOffhandSlot
+        // Simbol ini adalah 'kunci' agar item bisa pindah otomatis
+        void* sig = dlsym(handle, "_ZN12PlayerInventory14setOffhandSlotERK10ItemStack");
         
-        if (symbol) {
-            LOGI("Symbol ditemukan, melakukan Hooking via Ambient API...");
-            // Proses Hooking dilakukan di sini
-            // Player_normalTick_orig = (void(*)(void*))AmbiHook(symbol, (void*)Player_normalTick_hook);
-        } else {
-            LOGI("Symbol tidak ditemukan! Pastikan versi Minecraft sesuai.");
+        if (sig) {
+            Player_setOffhandSlot = (void(*)(void*, void*))sig;
+            LOGI("Kunci Inventory Ditemukan!");
         }
     }
 }
