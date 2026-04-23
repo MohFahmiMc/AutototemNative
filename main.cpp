@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
-// Gunakan include langsung agar lebih aman dari error path
-#include "gamepwnage/LocalPlayer.h"
-#include "gamepwnage/ItemStack.h"
+// Kita panggil langsung file-nya
+#include "LocalPlayer.h"
+#include "ItemStack.h"
 
 void (*LocalPlayer_tick_orig)(void*);
 
