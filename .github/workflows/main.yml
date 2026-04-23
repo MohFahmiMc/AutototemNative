@@ -1,26 +1,19 @@
-name: Build-ArmorHUD-Overlay
+name: Build-ArmorHUD-Server
 on: [push]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Android NDK
+      - uses: actions/checkout@v4
+      - name: Setup NDK
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
           unzip -q android-ndk-r25c-linux.zip
-
-      - name: Compile Mod
+      - name: Compile
         run: |
           ./android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++ \
-          -shared -fPIC -Ofast -std=c++17 main.cpp -o libArmorHUD.so \
-          -llog -ldl
-
-      - name: Upload Result
-        uses: actions/upload-artifact@v4
+          -shared -fPIC -Ofast -std=c++17 main.cpp -o libArmorHUD.so -llog -ldl
+      - uses: actions/upload-artifact@v4
         with:
-          name: ArmorHUD-Ready
+          name: ArmorHUD-Server-Work
           path: libArmorHUD.so
