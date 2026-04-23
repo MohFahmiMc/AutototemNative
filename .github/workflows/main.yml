@@ -17,7 +17,8 @@ jobs:
         run: |
           ./android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++ \
           -shared -fPIC -Ofast -std=c++17 \
-          -I. \
+          -I . \
+          -I gamepwnage \
           main.cpp -o libArmorHUD.so \
           -llog -ldl
 
