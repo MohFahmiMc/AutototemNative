@@ -1,4 +1,4 @@
-name: Build-Ambient-AutoTotem-Complete
+name: Build-AutoSprint-English
 on: [push]
 
 jobs:
@@ -8,22 +8,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup NDK r25c
+      - name: Setup Android NDK
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
           unzip -q android-ndk-r25c-linux.zip
 
-      - name: Compile Mod Complete
+      - name: Compile Shared Library
         run: |
           ./android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++ \
-          -shared -fPIC -O3 \
-          main.cpp -o libAutoTotem.so \
-          -llog -ldl -latomic
-        # -O3 untuk performa maksimal di Vivo Y12
-        # -latomic ditambah agar operasi memori lebih stabil
+          -shared -fPIC -O2 main.cpp -o libAutoSprint.so \
+          -llog -ldl
 
-      - name: Upload Mod Jadi
+      - name: Upload Mod Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AutoTotem-v1.26-Final
-          path: libAutoTotem.so
+          name: AutoSprint-Mod-Build
+          path: libAutoSprint.so
