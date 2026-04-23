@@ -1,4 +1,4 @@
-name: Build-ArmorHUD-Final
+name: Build-ArmorHUD-Overlay
 on: [push]
 
 jobs:
