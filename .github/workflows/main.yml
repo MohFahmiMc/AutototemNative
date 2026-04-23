@@ -1,27 +1,26 @@
-name: Build-AutoSprint-Trigger
+name: Build-Ambient-AutoSprint
 on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup NDK r25c
+      - name: Setup NDK
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
           unzip -q android-ndk-r25c-linux.zip
 
-      - name: Compile For Vivo Y12
+      - name: Compile
         run: |
           ./android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++ \
-          -shared -fPIC -O3 -ffast-math \
-          main.cpp -o libAutoSprint.so \
+          -shared -fPIC -O3 main.cpp -o libAutoSprint.so \
           -llog -ldl
 
-      - name: Upload Mod
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: AutoSprint-Trigger-v1.26
+          name: AutoSprint-1.26.13.1
           path: libAutoSprint.so
