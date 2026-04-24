@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <cstdio>
+#include <dlfcn.h>
 
 #include "memscan.h"
 #include "inlinehook.h"
@@ -47,7 +48,6 @@ void hooked_baseTick(void* p) {
     if (p != nullptr && _getArmor && _displayMsg) {
         std::string hud = "§l§fArmor: ";
         bool hasArmor = false;
-
         for (int i = 0; i < 4; i++) {
             void* stack = _getArmor(p, i);
             if (stack != nullptr) {
@@ -92,12 +92,7 @@ void hookArmor() {
     }
 
     if (func && func != (void*)-1) {
-        g_hook = hook_addr(
-            func,
-            (void*)hooked_baseTick,
-            (void**)&original_baseTick,
-            GPWN_AARCH64_MICROHOOK
-        );
+        g_hook = hook_addr(func, (void*)hooked_baseTick, (void**)&original_baseTick, GPWN_AARCH64_MICROHOOK);
     }
 }
 
