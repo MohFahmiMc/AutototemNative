@@ -1,11 +1,15 @@
-#include <jni.h>
-#include <dlfcn.h>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <nlohmann/json.hpp>
+#include <set>
 #include <string>
-#include <vector>
+#include <unordered_map>
+#include <cstdio>
+
 #include "memscan.h"
 #include "inlinehook.h"
 
-// Definisi fungsi Minecraft
 typedef void*(*t_getArmor)(void*, int);
 typedef int(*t_getDmg)(void*);
 typedef int(*t_getMaxDmg)(void*);
@@ -18,7 +22,27 @@ t_displayMsg _displayMsg = nullptr;
 
 void (*original_baseTick)(void*);
 
-// Fungsi HUD Armor
+nlohmann::json outputJson;
+std::string dirPath = "";
+std::string filePath = "";
+
+bool testDirWritable(const std::string &dir) {
+    std::error_code _;
+    std::filesystem::create_directories(dir, _);
+    std::string testFile = dir + "._perm_test";
+    std::ofstream ofs(testFile);
+    bool ok = ofs.is_open();
+    ofs.close();
+    if (ok) std::filesystem::remove(testFile, _);
+    return ok;
+}
+
+std::string getConfigDir() {
+    std::string base = "/sdcard/Android/media/io.kitsuri.mayape/modules/ArmorHUD/";
+    if (testDirWritable(base)) return base;
+    return "/sdcard/games/ArmorHUD/";
+}
+
 void hooked_baseTick(void* p) {
     if (p != nullptr && _getArmor && _displayMsg) {
         std::string hud = "§l§fArmor: ";
@@ -31,38 +55,59 @@ void hooked_baseTick(void* p) {
                 if (max > 0) {
                     int val = max - _getDmg(stack);
                     std::string col = (val < max * 0.25) ? "§c" : (val < max * 0.5 ? "§e" : "§a");
-                    hud += col + std::to_string(val) + "§f | ";
+                    hud += col + std::to_string(val) + " §f| ";
                     hasArmor = true;
                 }
             }
         }
-        if (hasArmor) {
-            _displayMsg(p, hud);
-        }
+        if (hasArmor) _displayMsg(p, hud);
     }
-    // Pastikan fungsi asli dipanggil agar tidak crash
-    if (original_baseTick) {
-        original_baseTick(p);
-    }
+    original_baseTick(p);
 }
 
-__attribute__((constructor))
-void StartUp() {
-    // Membuka libminecraftpe.so dengan aman
+hook_handle* g_hook = nullptr;
+
+void hookArmor() {
     void* handle = dlopen("libminecraftpe.so", RTLD_LAZY);
     if (!handle) return;
 
-    // Mencari alamat fungsi berdasarkan nama asli (Mangled Name)
     _getArmor = (t_getArmor)dlsym(handle, "_ZNK4Player8getArmorEi");
     _getDmg = (t_getDmg)dlsym(handle, "_ZNK12ItemStackBase14getDamageValueEv");
     _getMaxDmg = (t_getMaxDmg)dlsym(handle, "_ZNK12ItemStackBase12getMaxDamageEv");
     _displayMsg = (t_displayMsg)dlsym(handle, "_ZN11LocalPlayer20displayClientMessageERKSs");
 
-    // Ambil alamat baseTick secara langsung
-    void* bt_addr = dlsym(handle, "_ZN11LocalPlayer8baseTickEv");
+    const char* patterns[] = {
+        "?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 FD 03 00 91 ?? ?? ?? D1 ?? ?? ?? D5 FA 03 00 AA F5 03 07 AA",
+        "FD 7B BA A9 FC 6F 01 A9 FA 67 02 A9 F8 5F 03 A9 F6 57 04 A9 F4 4F 05 A9 FD 03 00 91 FF C3 18 D1 59 D0 3B D5 FA 03 00 AA F5 03 07 AA"
+    };
 
-    if (bt_addr) {
-        // Gunakan Microhook dari Ambient
-        hook_addr(bt_addr, (void*)hooked_baseTick, (void**)&original_baseTick, GPWN_AARCH64_MICROHOOK);
+    void* func = nullptr;
+    for (const char* pattern : patterns) {
+        sigscan_handle* scanner = sigscan_setup(pattern, "libminecraftpe.so", GPWN_SIGSCAN_XMEM);
+        if (scanner) {
+            func = get_sigscan_result(scanner);
+            sigscan_cleanup(scanner);
+            if (func && func != (void*)-1) break;
+        }
     }
+
+    if (func && func != (void*)-1) {
+        g_hook = hook_addr(
+            func,
+            (void*)hooked_baseTick,
+            (void**)&original_baseTick,
+            GPWN_AARCH64_MICROHOOK
+        );
+    }
+}
+
+__attribute__((constructor))
+void StartUp() {
+    dirPath = getConfigDir();
+    hookArmor();
+}
+
+__attribute__((destructor))
+void Shutdown() {
+    if (g_hook) rm_hook(g_hook);
 }
