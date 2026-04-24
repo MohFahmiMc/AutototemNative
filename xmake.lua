@@ -6,8 +6,7 @@ set_arch("arm64-v8a")
 
 add_rules("mode.release")
 
--- Settingan CXFLAGS yang lebih aman (Hapus -flto sementara untuk tes stabilitas)
-add_cxflags("-O2", "-fvisibility=hidden", "-ffunction-sections", "-fdata-sections", "-w", {force = true})
+add_cxflags("-O2", "-fvisibility=hidden", "-ffunction-sections", "-fdata-sections", "-flto", "-w", "-fdeclspec", {force = true})
 add_ldflags("-Wl,--gc-sections", "-Wl,--strip-all", "-s")
 
 add_repositories("xmake-repo https://github.com/xmake-io/xmake-repo.git")
