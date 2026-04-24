@@ -18,7 +18,7 @@ t_displayMsg _displayMsg = nullptr;
 
 void (*original_baseTick)(void*);
 
-// Fungsi Logic Armor HUD
+// Fungsi HUD Armor
 void hooked_baseTick(void* p) {
     if (p != nullptr && _getArmor && _displayMsg) {
         std::string hud = "§l§fArmor: ";
@@ -36,35 +36,33 @@ void hooked_baseTick(void* p) {
                 }
             }
         }
-        if (hasArmor) _displayMsg(p, hud);
-    }
-    original_baseTick(p);
-}
-
-void hookArmor() {
-    void* handle = dlopen("libminecraftpe.so", RTLD_LAZY);
-    if (!handle) return;
-
-    _getArmor = (t_getArmor)dlsym(handle, "_ZNK4Player8getArmorEi");
-    _getDmg = (t_getDmg)dlsym(handle, "_ZNK12ItemStackBase14getDamageValueEv");
-    _getMaxDmg = (t_getMaxDmg)dlsym(handle, "_ZNK12ItemStackBase12getMaxDamageEv");
-    _displayMsg = (t_displayMsg)dlsym(handle, "_ZN11LocalPlayer20displayClientMessageERKSs");
-
-    // Sigscan agar Ambient mendeteksi mod sebagai "Active"
-    const char* pattern = "?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 FD 03 00 91 ?? ?? ?? D1 ?? ?? ?? D5 FA 03 00 AA F5 03 07 AA";
-    sigscan_handle* scanner = sigscan_setup(pattern, "libminecraftpe.so", GPWN_SIGSCAN_XMEM);
-    
-    if (scanner) {
-        void* func = get_sigscan_result(scanner);
-        sigscan_cleanup(scanner);
-        if (func && func != (void*)-1) {
-            // Gunakan Microhook sesuai gaya Ambient
-            hook_addr(func, (void*)hooked_baseTick, (void**)&original_baseTick, GPWN_AARCH64_MICROHOOK);
+        if (hasArmor) {
+            _displayMsg(p, hud);
         }
+    }
+    // Pastikan fungsi asli dipanggil agar tidak crash
+    if (original_baseTick) {
+        original_baseTick(p);
     }
 }
 
 __attribute__((constructor))
 void StartUp() {
-    hookArmor();
+    // Membuka libminecraftpe.so dengan aman
+    void* handle = dlopen("libminecraftpe.so", RTLD_LAZY);
+    if (!handle) return;
+
+    // Mencari alamat fungsi berdasarkan nama asli (Mangled Name)
+    _getArmor = (t_getArmor)dlsym(handle, "_ZNK4Player8getArmorEi");
+    _getDmg = (t_getDmg)dlsym(handle, "_ZNK12ItemStackBase14getDamageValueEv");
+    _getMaxDmg = (t_getMaxDmg)dlsym(handle, "_ZNK12ItemStackBase12getMaxDamageEv");
+    _displayMsg = (t_displayMsg)dlsym(handle, "_ZN11LocalPlayer20displayClientMessageERKSs");
+
+    // Ambil alamat baseTick secara langsung
+    void* bt_addr = dlsym(handle, "_ZN11LocalPlayer8baseTickEv");
+
+    if (bt_addr) {
+        // Gunakan Microhook dari Ambient
+        hook_addr(bt_addr, (void*)hooked_baseTick, (void**)&original_baseTick, GPWN_AARCH64_MICROHOOK);
+    }
 }
