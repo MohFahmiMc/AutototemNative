@@ -46,23 +46,23 @@ std::string getConfigDir() {
 
 void hooked_baseTick(void* p) {
     if (p != nullptr && _getArmor && _displayMsg) {
-        std::string hud = "§l§fArmor: ";
+        std::string hudText = "§l§fArmor: ";
         bool hasArmor = false;
         for (int i = 0; i < 4; i++) {
             void* stack = _getArmor(p, i);
             if (stack != nullptr) {
                 int max = _getMaxDmg(stack);
-                if (max > 0) {
+                if (max > 0 && max < 5000) {
                     int val = max - _getDmg(stack);
                     std::string col = (val < max * 0.25) ? "§c" : (val < max * 0.5 ? "§e" : "§a");
-                    hud += col + std::to_string(val) + " §f| ";
+                    hudText += col + std::to_string(val) + " §f| ";
                     hasArmor = true;
                 }
             }
         }
-        if (hasArmor) _displayMsg(p, hud);
+        if (hasArmor) _displayMsg(p, hudText);
     }
-    original_baseTick(p);
+    if (original_baseTick) original_baseTick(p);
 }
 
 hook_handle* g_hook = nullptr;
@@ -78,7 +78,7 @@ void hookArmor() {
 
     const char* patterns[] = {
         "?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 FD 03 00 91 ?? ?? ?? D1 ?? ?? ?? D5 FA 03 00 AA F5 03 07 AA",
-        "FD 7B BA A9 FC 6F 01 A9 FA 67 02 A9 F8 5F 03 A9 F6 57 04 A9 F4 4F 05 A9 FD 03 00 91 FF C3 18 D1 59 D0 3B D5 FA 03 00 AA F5 03 07 AA"
+        "?? ?? ?? D1 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? A9 ?? ?? ?? 91 ?? ?? ?? F9 ?? ?? ?? D5 FB 03 00 AA ?? ?? ?? F9 F5 03 07 AA"
     };
 
     void* func = nullptr;
